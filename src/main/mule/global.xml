@@ -7,4 +7,6 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 	<http:listener-config name="HTTP_Listener_Connector" doc:name="HTTP Listener config" doc:id="f5972931-0a1c-42ed-ba27-5250bce0b256" >
 		<http:listener-connection host="${http.host}" port="${http.port}" />
 	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c8017f06-7e72-4190-872a-bdf8712e2096" file="config-${env}.yaml" />
+	<global-property doc:name="Global Property" doc:id="31744280-fdaa-4c48-86fe-65c5be6abf16" name="env" value="DEV" />
 </mule>

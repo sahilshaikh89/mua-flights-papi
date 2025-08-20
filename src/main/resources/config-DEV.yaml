@@ -1,5 +1,5 @@
 # This file contains properties that are used for "DEV" environment
 
 http:
-  host: "localhost"
-  port: 7081
+  host:                     "localhost"
+  port:                     "7081"

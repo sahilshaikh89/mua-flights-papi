@@ -11,4 +11,9 @@ http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org
 		<american-flights-api:get-flights doc:name="Invoke American REST Service - Get Flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="${american.rest.clientId}" client-secret="${american.rest.clientSecret}" destination='#[if(vars.cityCode != "ALL") vars.cityCode else null]'/>
 		<logger level="INFO" doc:name="Logger" doc:id="9218b62d-0ce3-4f8c-bbf0-308c74b24914" message="#[payload]"/>
 	</flow>
+	<flow name="getUnitedFlights" doc:id="437a5632-fc01-4180-8e2b-bab31e6147f1" >
+		<http:listener doc:name="Listener" doc:id="9856c845-9599-491f-9ff6-9c8601399749" config-ref="HTTP_Listener_Connector" path="/united"/>
+		<http:request method="GET" doc:name="Invoke United REST Service - Get Flights" doc:id="405b1f91-011f-4c1e-b3cd-7582b5c7edc5" url="http://ilt.mule-training.com/united/flights"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fe75b85f-7b9e-4ebf-9d5e-01395bb36dd6" message="#[payload]"/>
+	</flow>
 </mule>

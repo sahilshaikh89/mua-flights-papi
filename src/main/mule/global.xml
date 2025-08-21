@@ -10,5 +10,5 @@ http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="c8017f06-7e72-4190-872a-bdf8712e2096" file="config-${env}.yaml" />
 	<global-property doc:name="Global Property" doc:id="31744280-fdaa-4c48-86fe-65c5be6abf16" name="env" value="DEV" />
-	<american-flights-api:config name="American_Flights_API_Config" doc:name="American Flights API Config" doc:id="bdfe2814-fe64-463f-98f0-1684c1142663" property_host="mu.mule-training.com" property_port="80" property_basePath="/american" property_protocol="HTTP" property_responseTimeout="3000" />
+	<american-flights-api:config name="American_Flights_API_Config" doc:name="American Flights API Config" doc:id="bdfe2814-fe64-463f-98f0-1684c1142663" property_host="${american.rest.hostName}" property_port="${american.rest.portNumber}" property_basePath="${american.rest.basePath}" property_protocol="${american.rest.protocol}" property_responseTimeout="${american.rest.responseTimeout}" />
 </mule>

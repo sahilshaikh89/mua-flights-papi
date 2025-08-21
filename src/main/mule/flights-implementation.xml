@@ -1,19 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd">
+http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >
 		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>
-		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode"/>
+		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode" />
 		<american-flights-api:get-flights doc:name="Invoke American REST Service - Get Flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="${american.rest.clientId}" client-secret="${american.rest.clientSecret}" destination='#[if(vars.cityCode != "ALL") vars.cityCode else null]'/>
 		<logger level="INFO" doc:name="Logger" doc:id="9218b62d-0ce3-4f8c-bbf0-308c74b24914" message="#[payload]"/>
 	</flow>
 	<flow name="getUnitedFlights" doc:id="437a5632-fc01-4180-8e2b-bab31e6147f1" >
 		<http:listener doc:name="Listener" doc:id="9856c845-9599-491f-9ff6-9c8601399749" config-ref="HTTP_Listener_Connector" path="/united"/>
-		<http:request method="GET" doc:name="Invoke United REST Service - Get Flights" doc:id="405b1f91-011f-4c1e-b3cd-7582b5c7edc5" url="http://ilt.mule-training.com/united/flights"/>
+		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="e1a6b1f5-ae57-4e57-810c-d6d6cf669688" variableName="cityCode" />
+		<http:request method="GET" doc:name="Invoke United REST Service - Get Flights" doc:id="405b1f91-011f-4c1e-b3cd-7582b5c7edc5" path="${united.rest.path}${united.rest.filterBy}" config-ref="United_Http_Request_Connector">
+			<http:uri-params ><![CDATA[#[destinationCity: if(vars.cityCode != "ALL") ("/" ++ vars.cityCode) else ""]]]></http:uri-params>
+		</http:request>
 		<logger level="INFO" doc:name="Logger" doc:id="fe75b85f-7b9e-4ebf-9d5e-01395bb36dd6" message="#[payload]"/>
+	</flow>
+	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
+		<http:listener doc:name="Listener" doc:id="87f0d570-92a5-414e-a103-bf5b3fb307ff" config-ref="HTTP_Listener_Connector" path="/delta"/>
+		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />
+		<wsc:consume doc:name="Consume" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="listAllFlights"/>
+		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />
 	</flow>
 </mule>

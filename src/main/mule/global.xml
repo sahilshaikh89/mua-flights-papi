@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd">
+http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
 	<http:listener-config name="HTTP_Listener_Connector" doc:name="HTTP Listener config" doc:id="f5972931-0a1c-42ed-ba27-5250bce0b256" >
 		<http:listener-connection host="${http.host}" port="${http.port}" />
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="c8017f06-7e72-4190-872a-bdf8712e2096" file="config-${env}.yaml" />
 	<global-property doc:name="Global Property" doc:id="31744280-fdaa-4c48-86fe-65c5be6abf16" name="env" value="DEV" />
 	<american-flights-api:config name="American_Flights_API_Config" doc:name="American Flights API Config" doc:id="bdfe2814-fe64-463f-98f0-1684c1142663" property_host="${american.rest.hostName}" property_port="${american.rest.portNumber}" property_basePath="${american.rest.basePath}" property_protocol="${american.rest.protocol}" property_responseTimeout="${american.rest.responseTimeout}" />
+	<http:request-config name="United_Http_Request_Connector" doc:name="HTTP Request configuration" doc:id="7ee45089-c40f-41ae-baa2-d66efc709c15" basePath="${united.rest.basePath}">
+		<http:request-connection protocol="${united.rest.protocol}" host="${united.rest.hostName}" port="${united.rest.portNumber}" />
+	</http:request-config>
+	<wsc:config name="Delta_SOAP_Connector" doc:name="Web Service Consumer Config" doc:id="9fe27cf6-e9fe-4b24-ba3e-aeb0cbcfe6ad" >
+		<wsc:connection wsdlLocation="http://mu.mule-training.com/delta?wsdl" service="TicketServiceService" port="DeltaFlightsServiceImplPort" address="http://mu.mule-training.com/delta" >
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
+		</wsc:connection>
+	</wsc:config>
 </mule>

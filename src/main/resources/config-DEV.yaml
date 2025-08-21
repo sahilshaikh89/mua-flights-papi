@@ -18,7 +18,20 @@ american:
     responseTimeout:                  "3000"
     clientId:                         "2b6e1d0a4bda4fb6a986766395f721ac"
     clientSecret:                     "5727697f45b1491986d748F2A180C95C"
+
+# United REST service properties
+# mu.mule-training.com/united/flights{destinationCity}
+united:
+  rest:
+    hostName:                         "mu.mule-training.com"
+    portNumber:                       "80"
+    basePath:                         "/united"
+    protocol:                         "HTTP"
+    path:                             "/flights"
+    filterBy:                         "{destinationCity}"
     
+
+        
 
 # American REST service properties
 #american:

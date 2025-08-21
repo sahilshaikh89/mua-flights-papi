@@ -27,6 +27,24 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>
 		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode" />
 		<american-flights-api:get-flights doc:name="Invoke American REST Service - Get Flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="${american.rest.clientId}" client-secret="${american.rest.clientSecret}" destination='#[if(vars.cityCode != "ALL") vars.cityCode else null]'/>
+		<ee:transform doc:name="Transform Message" doc:id="20e0a94f-42a3-42a5-b1f3-d3df7bab3503" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	airline: "American",
+	flightCode: payload01.code,
+	fromAirportCode: payload01.origin,
+	toAirportCode: payload01.destination,
+	departureDate: payload01.departureDate,
+	emptySeats: payload01.emptySeats,
+	totalSeats: payload01.plane.totalSeats default 0,
+	price: payload01.price,
+	planeType: payload01.plane."type" default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="9218b62d-0ce3-4f8c-bbf0-308c74b24914" message="#[payload]"/>
 	</flow>
 	<flow name="getUnitedFlights" doc:id="437a5632-fc01-4180-8e2b-bab31e6147f1" >
@@ -35,6 +53,24 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:request method="GET" doc:name="Invoke United REST Service - Get Flights" doc:id="405b1f91-011f-4c1e-b3cd-7582b5c7edc5" path="${united.rest.path}${united.rest.filterBy}" config-ref="United_Http_Request_Connector">
 			<http:uri-params ><![CDATA[#[destinationCity: if(vars.cityCode != "ALL") ("/" ++ vars.cityCode) else ""]]]></http:uri-params>
 		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="cefe7e6d-446e-42c5-83a5-ac0f21db12c7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.flights map ( flight , indexOfFlight ) -> {
+	airline: flight.airlineName,
+	flightCode: flight.code,
+	price: flight.price,
+	fromAirportCode: flight.origin,
+	planeType: flight.planeType,
+	toAirportCode: flight.destination,
+	departureDate: flight.departureDate,
+	emptySeats: flight.emptySeats,
+	totalSeats: 120
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="fe75b85f-7b9e-4ebf-9d5e-01395bb36dd6" message="#[payload]"/>
 	</flow>
 	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
@@ -56,9 +92,47 @@ ns ns0 http://soap.training.mulesoft.com/
 			</ee:message>
 		</ee:transform>
 				<wsc:consume doc:name="Invoke Delta SOAP Service by destinationCity" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight" />
+				<ee:transform doc:name="Transform Message" doc:id="b37258a2-f311-4f07-98cf-8c41bfb19f83" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://soap.training.mulesoft.com/
+---
+payload.body.ns0#findFlightResponse.*return map ( return , indexOfReturn ) -> {
+	airline: return.airlineName default "",
+	flightCode: return.code default "",
+	fromAirportCode: return.origin default "",
+	toAirportCode: (return.destination default "") ++ (return.origin default ""),
+	departureDate: return.departureDate default "",
+	emptySeats: (return.emptySeats default 0) + (return.emptySeats default 0),
+	totalSeats: 120,
+	price: (return.price default 0) + (return.price default 0),
+	planeType: return.planeType default ""
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
 			</when>
 			<otherwise >
 				<wsc:consume operation="listAllFlights" doc:name="Invoke Delta SOAP Service" doc:id="c798caf1-9e23-4ab3-9a45-013b01571181" config-ref="Delta_SOAP_Connector" />
+				<ee:transform doc:name="Transform Message" doc:id="a29aca0c-a2ad-4a1a-b2c5-30415553166b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://soap.training.mulesoft.com/
+---
+payload.body.ns0#listAllFlightsResponse.*return map ( return , indexOfReturn ) -> {
+	airline: return.airlineName default "",
+	flightCode: return.code default "",
+	fromAirportCode: return.origin default "",
+	toAirportCode: (return.destination default "") ++ (return.origin default ""),
+	departureDate: return.departureDate default "",
+	emptySeats: (return.emptySeats default 0) + (return.emptySeats default 0),
+	totalSeats: 120,
+	price: (return.price default 0) + (return.price default 0),
+	planeType: return.planeType default ""
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
 			</otherwise>
 		</choice>
 		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />

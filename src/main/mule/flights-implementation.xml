@@ -7,7 +7,8 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd">
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >
 		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>
-		<american-flights-api:get-flights doc:name="Get flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="2b6e1d0a4bda4fb6a986766395f721ac" client-secret="5727697f45b1491986d748F2A180C95C"/>
+		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode"/>
+		<american-flights-api:get-flights doc:name="Invoke American REST Service - Get Flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="${american.rest.clientId}" client-secret="${american.rest.clientSecret}" destination='#[if(vars.cityCode != "ALL") vars.cityCode else null]'/>
 		<logger level="INFO" doc:name="Logger" doc:id="9218b62d-0ce3-4f8c-bbf0-308c74b24914" message="#[payload]"/>
 	</flow>
 </mule>

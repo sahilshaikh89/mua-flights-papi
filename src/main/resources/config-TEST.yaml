@@ -3,3 +3,18 @@
 http:
   host:                     "0.0.0.0"
   port:                     "8081"
+  
+# Supported destinations by Mule United Airport [defined in RAML]
+valid:
+  destinationCities:                 "ALL, LAX, CLE, SFO, PDX, PDF"
+  
+# American REST service properties
+american:
+  rest:
+    hostName:                         "ilt.mule-training.com"
+    portNumber:                       "80"
+    basePath:                         "/american"
+    protocol:                         "HTTP"
+    responseTimeout:                  "3000"
+    clientId:                         "2b6e1d0a4bda4fb6a986766395f721ac"
+    clientSecret:                     "5727697f45b1491986d748F2A180C95C"

@@ -24,9 +24,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
 		<http:listener doc:name="Listener" doc:id="87f0d570-92a5-414e-a103-bf5b3fb307ff" config-ref="HTTP_Listener_Connector" path="/delta"/>
 		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />
-		<ee:transform doc:name="Convert cityCode to destination in XML format" doc:id="23a01c1f-315c-431c-82c6-26425501562d" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+		<choice doc:name="Route based on destination city code" doc:id="b3c775ae-d84b-4370-bd6f-9af281e1f173" >
+			<when expression='#[vars.cityCode != "ALL"]'>
+				<ee:transform doc:name="Convert cityCode to destination in XML format" doc:id="23a01c1f-315c-431c-82c6-26425501562d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/xml
 ns ns0 http://soap.training.mulesoft.com/
 ---
@@ -37,7 +39,12 @@ ns ns0 http://soap.training.mulesoft.com/
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<wsc:consume doc:name="Invoke Delta SOAP Service" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight"/>
+				<wsc:consume doc:name="Invoke Delta SOAP Service by destinationCity" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight" />
+			</when>
+			<otherwise >
+				<wsc:consume operation="listAllFlights" doc:name="Invoke Delta SOAP Service" doc:id="c798caf1-9e23-4ab3-9a45-013b01571181" config-ref="Delta_SOAP_Connector" />
+			</otherwise>
+		</choice>
 		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />
 	</flow>
 </mule>

@@ -9,6 +9,18 @@ http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="getFlightsMain" doc:id="96717a11-c4e8-486f-b13a-33bb5d40220a" >
 		<http:listener doc:name="Listener" doc:id="88074a6a-76f2-4ca9-8678-de9d30f82ac8" config-ref="HTTP_Listener_Connector" path="/flights"/>
+		<set-variable value='#[lower(message.attributes.queryParams.airline default "all")]' doc:name="airlineCarrier" doc:id="caafb22b-d5e8-4a94-9d6b-402f5711acd8" variableName="airlineCarrier"/>
+		<choice doc:name="Route based on airlineCarrier/Vendor name" doc:id="c397112e-726d-4076-82e9-270f64c25eab" >
+			<when expression='#[vars.airlineCarrier == "american"]'>
+				<flow-ref doc:name="Invoke getAmericanFlights" doc:id="b6f6d7b4-0362-470d-8999-4bbed4c4abeb" name="getAmericanFlights"/>
+			</when>
+			<when expression='#[vars.airlineCarrier == "delta"]'>
+				<flow-ref doc:name="Invoke getDeltaFlights" doc:id="7fc79095-cef7-4a50-9219-7c44c104a5cf" name="getDeltaFlights"/>
+			</when>
+			<when expression='#[vars.airlineCarrier == "united"]'>
+				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="28008fbc-f3e4-4c36-910c-c1dd891d2430" name="getUnitedFlights"/>
+			</when>
+		</choice>
 		<logger level="INFO" doc:name="Logger" doc:id="8bb82080-dbd0-4454-b4c8-84da16602f1f" message="#[payload]" />
 	</flow>
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >

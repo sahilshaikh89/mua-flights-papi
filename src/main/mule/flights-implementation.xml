@@ -9,23 +9,38 @@ http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="getFlightsMain" doc:id="96717a11-c4e8-486f-b13a-33bb5d40220a" >
 		<http:listener doc:name="Listener" doc:id="88074a6a-76f2-4ca9-8678-de9d30f82ac8" config-ref="HTTP_Listener_Connector" path="/flights"/>
-		<set-variable value='#[lower(message.attributes.queryParams.airline default "all")]' doc:name="airlineCarrier" doc:id="caafb22b-d5e8-4a94-9d6b-402f5711acd8" variableName="airlineCarrier"/>
-		<choice doc:name="Route based on airlineCarrier/Vendor name" doc:id="c397112e-726d-4076-82e9-270f64c25eab" >
-			<when expression='#[vars.airlineCarrier == "american"]'>
-				<flow-ref doc:name="Invoke getAmericanFlights" doc:id="b6f6d7b4-0362-470d-8999-4bbed4c4abeb" name="getAmericanFlights"/>
-			</when>
-			<when expression='#[vars.airlineCarrier == "delta"]'>
-				<flow-ref doc:name="Invoke getDeltaFlights" doc:id="7fc79095-cef7-4a50-9219-7c44c104a5cf" name="getDeltaFlights"/>
-			</when>
-			<when expression='#[vars.airlineCarrier == "united"]'>
-				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="28008fbc-f3e4-4c36-910c-c1dd891d2430" name="getUnitedFlights"/>
-			</when>
-			<otherwise >
-				<flow-ref doc:name="Invoke getAllAirlines" doc:id="6df8fbcb-d9f9-49ba-bf65-9236810d0b8a" name="getAllAirlinesFlights"/>
-			</otherwise>
-		</choice>
+		<flow-ref doc:name="Invoke setCityCodeAndAirlineCarrier" doc:id="c712d075-e2b1-4490-a63f-513e322044f0" name="setCityCodeAndAirlineCarrier"/>
+		<flow-ref doc:name="Invoke processGetFlightsByAirlineCarrier" doc:id="1a1a88a2-c49d-4257-9044-d8195467bff2" name="processGetFlightsByAirlineCarrier"/>
+		<ee:transform doc:name="Convert Java ArrayList into JsonArray" doc:id="2482a545-e3ca-4ceb-8b95-554bbcb57fac" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="8bb82080-dbd0-4454-b4c8-84da16602f1f" message="#[payload]" />
 	</flow>
+	<sub-flow name="setCityCodeAndAirlineCarrier" doc:id="b6cd5b5c-0871-4a1f-814a-fca9cacc6b39" >
+		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />
+		<set-variable value='#[lower(message.attributes.queryParams.airline default "all")]' doc:name="airlineCarrier" doc:id="caafb22b-d5e8-4a94-9d6b-402f5711acd8" variableName="airlineCarrier" />
+	</sub-flow>
+	<sub-flow name="processGetFlightsByAirlineCarrier" doc:id="6e20553f-39b5-4749-b81b-0d6c23570a9c" >
+		<choice doc:name="Route based on airlineCarrier/Vendor name" doc:id="c397112e-726d-4076-82e9-270f64c25eab">
+			<when expression='#[vars.airlineCarrier == "american"]'>
+				<flow-ref doc:name="Invoke getAmericanFlights" doc:id="b6f6d7b4-0362-470d-8999-4bbed4c4abeb" name="getAmericanFlights" />
+			</when>
+			<when expression='#[vars.airlineCarrier == "delta"]'>
+				<flow-ref doc:name="Invoke getDeltaFlights" doc:id="7fc79095-cef7-4a50-9219-7c44c104a5cf" name="getDeltaFlights" />
+			</when>
+			<when expression='#[vars.airlineCarrier == "united"]'>
+				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="28008fbc-f3e4-4c36-910c-c1dd891d2430" name="getUnitedFlights" />
+			</when>
+			<otherwise>
+				<flow-ref doc:name="Invoke getAllAirlines" doc:id="6df8fbcb-d9f9-49ba-bf65-9236810d0b8a" name="getAllAirlinesFlights" />
+			</otherwise>
+		</choice>
+	</sub-flow>
 	<flow name="getAllAirlinesFlights" doc:id="295642ac-0245-47aa-860f-19a768e69595" >
 		<scatter-gather doc:name="getAllAirlinesFlights" doc:id="96bacf7c-4c4b-4c37-967b-bbc2d47fff10" >
 			<route >
@@ -41,7 +56,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<ee:transform doc:name="Transform Message" doc:id="8fd805be-eae6-4e81-87b9-b4e13a49ddb6" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+output application/java
 ---
 flatten(payload..payload) default []]]></ee:set-payload>
 			</ee:message>
@@ -49,13 +64,11 @@ flatten(payload..payload) default []]]></ee:set-payload>
 		<logger level="INFO" doc:name="Logger" doc:id="723d4dfc-cca5-48d7-9e3c-c122839bf323" message="#[payload]" />
 	</flow>
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >
-		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>
-		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode" />
 		<american-flights-api:get-flights doc:name="Invoke American REST Service - Get Flights" doc:id="be112946-3720-4d88-8508-6123a0b743b5" config-ref="American_Flights_API_Config" client-id="${american.rest.clientId}" client-secret="${american.rest.clientSecret}" destination='#[if(vars.cityCode != "ALL") vars.cityCode else null]'/>
 		<ee:transform doc:name="Transform Message" doc:id="20e0a94f-42a3-42a5-b1f3-d3df7bab3503" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+output application/java
 ---
 payload map ( payload01 , indexOfPayload01 ) -> {
 	airline: "American",
@@ -73,15 +86,13 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 		<logger level="INFO" doc:name="Logger" doc:id="9218b62d-0ce3-4f8c-bbf0-308c74b24914" message="#[payload]"/>
 	</flow>
 	<flow name="getUnitedFlights" doc:id="437a5632-fc01-4180-8e2b-bab31e6147f1" >
-		<http:listener doc:name="Listener" doc:id="9856c845-9599-491f-9ff6-9c8601399749" config-ref="HTTP_Listener_Connector" path="/united"/>
-		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="e1a6b1f5-ae57-4e57-810c-d6d6cf669688" variableName="cityCode" />
 		<http:request method="GET" doc:name="Invoke United REST Service - Get Flights" doc:id="405b1f91-011f-4c1e-b3cd-7582b5c7edc5" path="${united.rest.path}${united.rest.filterBy}" config-ref="United_Http_Request_Connector">
 			<http:uri-params ><![CDATA[#[destinationCity: if(vars.cityCode != "ALL") ("/" ++ vars.cityCode) else ""]]]></http:uri-params>
 		</http:request>
 		<ee:transform doc:name="Transform Message" doc:id="cefe7e6d-446e-42c5-83a5-ac0f21db12c7" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+output application/java
 ---
 payload.flights map ( flight , indexOfFlight ) -> {
 	airline: flight.airlineName,
@@ -99,11 +110,18 @@ payload.flights map ( flight , indexOfFlight ) -> {
 		<logger level="INFO" doc:name="Logger" doc:id="fe75b85f-7b9e-4ebf-9d5e-01395bb36dd6" message="#[payload]"/>
 	</flow>
 	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
-		<http:listener doc:name="Listener" doc:id="87f0d570-92a5-414e-a103-bf5b3fb307ff" config-ref="HTTP_Listener_Connector" path="/delta"/>
-		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />
 		<choice doc:name="Route based on destination city code" doc:id="b3c775ae-d84b-4370-bd6f-9af281e1f173" >
 			<when expression='#[vars.cityCode != "ALL"]'>
-				<ee:transform doc:name="Convert cityCode to destination in XML format" doc:id="23a01c1f-315c-431c-82c6-26425501562d">
+				<flow-ref doc:name="Invoke processDeltaFlightsByCity" doc:id="50f5f16d-601e-4060-8648-a01fd71ed253" name="processDeltaFlights_byCity"/>
+			</when>
+			<otherwise>
+				<flow-ref doc:name="Invoke processDeltaFilights_allCities" doc:id="eda84548-0191-4cca-ade8-4dc605ed566b" name="processDeltaFlights_allCities"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />
+	</flow>
+	<sub-flow name="processDeltaFlights_byCity" doc:id="64ef4ae4-f690-46ed-b015-7f5e3bea1df0">
+		<ee:transform doc:name="Convert cityCode to destination in XML format" doc:id="23a01c1f-315c-431c-82c6-26425501562d">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/xml
@@ -116,11 +134,11 @@ ns ns0 http://soap.training.mulesoft.com/
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-				<wsc:consume doc:name="Invoke Delta SOAP Service by destinationCity" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight" />
-				<ee:transform doc:name="Transform Message" doc:id="b37258a2-f311-4f07-98cf-8c41bfb19f83" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+		<wsc:consume doc:name="Invoke Delta SOAP Service by destinationCity" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight" />
+		<ee:transform doc:name="Transform Message" doc:id="b37258a2-f311-4f07-98cf-8c41bfb19f83">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ns ns0 http://soap.training.mulesoft.com/
 ---
 payload.body.ns0#findFlightResponse.*return map ( return , indexOfReturn ) -> {
@@ -136,13 +154,13 @@ payload.body.ns0#findFlightResponse.*return map ( return , indexOfReturn ) -> {
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-			</when>
-			<otherwise >
-				<wsc:consume operation="listAllFlights" doc:name="Invoke Delta SOAP Service" doc:id="c798caf1-9e23-4ab3-9a45-013b01571181" config-ref="Delta_SOAP_Connector" />
-				<ee:transform doc:name="Transform Message" doc:id="a29aca0c-a2ad-4a1a-b2c5-30415553166b" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+	</sub-flow>
+	<sub-flow name="processDeltaFlights_allCities" doc:id="449debfb-1237-4fd4-be91-c071d3d90d11" >
+		<wsc:consume operation="listAllFlights" doc:name="Invoke Delta SOAP Service" doc:id="c798caf1-9e23-4ab3-9a45-013b01571181" config-ref="Delta_SOAP_Connector" />
+		<ee:transform doc:name="Transform Message" doc:id="a29aca0c-a2ad-4a1a-b2c5-30415553166b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ns ns0 http://soap.training.mulesoft.com/
 ---
 payload.body.ns0#listAllFlightsResponse.*return map ( return , indexOfReturn ) -> {
@@ -158,8 +176,5 @@ payload.body.ns0#listAllFlightsResponse.*return map ( return , indexOfReturn ) -
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-			</otherwise>
-		</choice>
-		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />
-	</flow>
+	</sub-flow>
 </mule>

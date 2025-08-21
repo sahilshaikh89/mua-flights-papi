@@ -20,8 +20,33 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<when expression='#[vars.airlineCarrier == "united"]'>
 				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="28008fbc-f3e4-4c36-910c-c1dd891d2430" name="getUnitedFlights"/>
 			</when>
+			<otherwise >
+				<flow-ref doc:name="Invoke getAllAirlines" doc:id="6df8fbcb-d9f9-49ba-bf65-9236810d0b8a" name="getAllAirlinesFlights"/>
+			</otherwise>
 		</choice>
 		<logger level="INFO" doc:name="Logger" doc:id="8bb82080-dbd0-4454-b4c8-84da16602f1f" message="#[payload]" />
+	</flow>
+	<flow name="getAllAirlinesFlights" doc:id="295642ac-0245-47aa-860f-19a768e69595" >
+		<scatter-gather doc:name="getAllAirlinesFlights" doc:id="96bacf7c-4c4b-4c37-967b-bbc2d47fff10" >
+			<route >
+				<flow-ref doc:name="Invoke getDeltaFlights" doc:id="00926dbc-5c87-403e-9b27-e00633d58bd7" name="getDeltaFlights" />
+			</route>
+			<route >
+				<flow-ref doc:name="Invoke getAmericanFlights" doc:id="cc08db7a-5e3c-462b-8969-f81d12871fbf" name="getAmericanFlights" />
+			</route>
+			<route >
+				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="51d645f1-beb9-43ba-a1d8-6a3c2989b85f" name="getUnitedFlights" />
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="8fd805be-eae6-4e81-87b9-b4e13a49ddb6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload) default []]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="723d4dfc-cca5-48d7-9e3c-c122839bf323" message="#[payload]" />
 	</flow>
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >
 		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>

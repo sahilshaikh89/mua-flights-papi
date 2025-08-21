@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd
-http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="getAmericanFlights" doc:id="1c38db28-46c5-4ade-86d4-ec4fa1bb1c40" >
 		<http:listener doc:name="Listener" doc:id="4c3dc867-2517-4cd7-95a2-a829991f2b9d" config-ref="HTTP_Listener_Connector" path="/american"/>
 		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="2faaa590-cd43-43ea-b694-d17d9a9f3f88" variableName="cityCode" />
@@ -23,7 +24,20 @@ http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/
 	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
 		<http:listener doc:name="Listener" doc:id="87f0d570-92a5-414e-a103-bf5b3fb307ff" config-ref="HTTP_Listener_Connector" path="/delta"/>
 		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />
-		<wsc:consume doc:name="Consume" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="listAllFlights"/>
+		<ee:transform doc:name="Convert cityCode to destination in XML format" doc:id="23a01c1f-315c-431c-82c6-26425501562d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://soap.training.mulesoft.com/
+---
+{
+	ns0#findFlight: {
+		destination: vars.cityCode
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Invoke Delta SOAP Service" doc:id="74b799b9-76aa-47c5-aac0-8f226098fe99" config-ref="Delta_SOAP_Connector" operation="findFlight"/>
 		<logger level="INFO" doc:name="Logger" doc:id="30d923b3-4891-4b0b-ae04-838864cdf41d" message="#[payload]" />
 	</flow>
 </mule>

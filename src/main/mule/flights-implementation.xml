@@ -1,15 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
-	xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:american-flights-api="http://www.mulesoft.org/schema/mule/american-flights-api" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/american-flights-api http://www.mulesoft.org/schema/mule/american-flights-api/current/mule-american-flights-api.xsd
 http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 	<flow name="getFlightsMain" doc:id="96717a11-c4e8-486f-b13a-33bb5d40220a" >
-		<http:listener doc:name="Listener" doc:id="88074a6a-76f2-4ca9-8678-de9d30f82ac8" config-ref="HTTP_Listener_Connector" path="/flights"/>
+		<http:listener doc:name="Listener" doc:id="88074a6a-76f2-4ca9-8678-de9d30f82ac8" config-ref="HTTP_Listener_Connector" path="/flights">
+			<http:response statusCode="#[vars.httpStatus default 200]">
+				<http:body ><![CDATA[#[output application/json --- payload]]]></http:body>
+			</http:response>
+			<http:error-response statusCode="#[vars.httpStatus default 500]">
+				<http:body ><![CDATA[#[output application/json --- payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
 		<flow-ref doc:name="Invoke setCityCodeAndAirlineCarrier" doc:id="c712d075-e2b1-4490-a63f-513e322044f0" name="setCityCodeAndAirlineCarrier"/>
+		<validation:is-true doc:name="Is destination city valid?" doc:id="4a1b16ca-8ba9-4a0e-a708-413c26434317" expression='#[(p("valid.destinationCities") splitBy ", " ) contains vars.cityCode ]' message='#["Invalid destination " ++ vars.cityCode ++ " was supplied. Only [" ++ p("valid.destinationCities") ++ "] are supported." as String]'>
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="DISNEY:FLIGHTS_NOT_FOUND" />
+		</validation:is-true>
 		<flow-ref doc:name="Invoke processGetFlightsByAirlineCarrier" doc:id="1a1a88a2-c49d-4257-9044-d8195467bff2" name="processGetFlightsByAirlineCarrier"/>
 		<ee:transform doc:name="Convert Java ArrayList into JsonArray" doc:id="2482a545-e3ca-4ceb-8b95-554bbcb57fac" >
 			<ee:message >
@@ -20,6 +31,18 @@ payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="8bb82080-dbd0-4454-b4c8-84da16602f1f" message="#[payload]" />
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue - INVALID DESTINATIONS" doc:id="2875079f-2211-4a28-8f33-974fa7852c78" type="DISNEY:FLIGHTS_NOT_FOUND">
+				<set-payload value='#[{&#10;	"errMesg": "BAD DESTINATION ERRORS: Processed by Flow-level Error Handler -&gt; On Error Continue",&#10;	"errDesc": error.description,&#10;	"errorAt": error.failingComponent,&#10;	"errorType": {&#10;		"moduleName": error.errorType.namespace,&#10;		"errorID": error.errorType.identifier&#10;	}&#10;}]' doc:name="Set Payload" doc:id="103cee54-ba9a-43c5-b74a-44d479bab179" />
+				<logger level="ERROR" doc:name="Logger" doc:id="7d1b8a6b-1c25-4adf-8e18-a261c846c5d5" message="#[payload]" />
+				<set-variable value="400" doc:name="httpStatus" doc:id="16c5316a-ea26-47ae-a89b-23e503412893" variableName="httpStatus" />
+			</on-error-continue>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate - AMERICAN API RELATED ERRORS" doc:id="cc4bb161-28dd-4d0e-a40b-486c1b1d0ef3" type="AMERICAN-FLIGHTS-API:BAD_REQUEST">
+				<set-payload value='#[{&#10;	"errMesg": "AMERICAN API ERRORS: Processed by Flow-level Error Handler -&gt; On Error Propagate",&#10;	"errDesc": error.description,&#10;	"errorAt": error.failingComponent,&#10;	"errorType": {&#10;		"moduleName": error.errorType.namespace,&#10;		"errorID": error.errorType.identifier&#10;	}&#10;}]' doc:name="Set Payload" doc:id="9c924d59-9f5b-4f0d-ab18-f48a3a41368a" />
+				<logger level="ERROR" doc:name="Logger" doc:id="8a20e148-cf30-43af-b6c8-7d4cf65de239" message="#[payload]" />
+				<set-variable value="404" doc:name="httpStatus" doc:id="9edf9540-6da4-42ae-8c73-13d8e13fb408" variableName="httpStatus" />
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	<sub-flow name="setCityCodeAndAirlineCarrier" doc:id="b6cd5b5c-0871-4a1f-814a-fca9cacc6b39" >
 		<set-variable value='#[upper(message.attributes.queryParams.code default "all")]' doc:name="cityCode" doc:id="4f4a03dc-5ccc-461c-8955-665b6f788b33" variableName="cityCode" />

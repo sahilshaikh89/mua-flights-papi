@@ -66,11 +66,25 @@ payload]]></ee:set-payload>
 	</sub-flow>
 	<flow name="getAllAirlinesFlights" doc:id="295642ac-0245-47aa-860f-19a768e69595" >
 		<scatter-gather doc:name="getAllAirlinesFlights" doc:id="96bacf7c-4c4b-4c37-967b-bbc2d47fff10" >
-			<route >
-				<flow-ref doc:name="Invoke getDeltaFlights" doc:id="00926dbc-5c87-403e-9b27-e00633d58bd7" name="getDeltaFlights" />
+			<route>
+				<try doc:name="Try" doc:id="8cc5b10f-8d3b-4412-b3b6-24d06aa0beb1" >
+					<flow-ref doc:name="Invoke getDeltaFlights" doc:id="00926dbc-5c87-403e-9b27-e00633d58bd7" name="getDeltaFlights" />
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="569c7da3-177c-4748-8d92-006f16c4546d" >
+							<flow-ref doc:name="process logAndSupporessErrors" doc:id="8292271f-1d82-4770-a866-703ce8b8c3c8" name="logAndSuppressErrors"/>
+						</on-error-continue>
+					</error-handler>
+				</try>
 			</route>
-			<route >
-				<flow-ref doc:name="Invoke getAmericanFlights" doc:id="cc08db7a-5e3c-462b-8969-f81d12871fbf" name="getAmericanFlights" />
+			<route>
+				<try doc:name="Try" doc:id="0de4f9da-8484-47a7-b7b9-da52cdea2d1b" >
+					<flow-ref doc:name="Invoke getAmericanFlights" doc:id="cc08db7a-5e3c-462b-8969-f81d12871fbf" name="getAmericanFlights" />
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3ed3790b-4515-4e0f-a707-285a5882b8f3" >
+							<flow-ref doc:name="process logAndSupporessErrors" doc:id="bdfdae62-c1ae-4eed-b6bb-324b79abde0b" name="logAndSuppressErrors" />
+						</on-error-continue>
+					</error-handler>
+				</try>
 			</route>
 			<route >
 				<flow-ref doc:name="Invoke getUnitedFlights" doc:id="51d645f1-beb9-43ba-a1d8-6a3c2989b85f" name="getUnitedFlights" />
@@ -132,6 +146,10 @@ payload.flights map ( flight , indexOfFlight ) -> {
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="fe75b85f-7b9e-4ebf-9d5e-01395bb36dd6" message="#[payload]"/>
 	</flow>
+	<sub-flow name="logAndSuppressErrors" doc:id="e6954ad2-7e02-4a14-a07c-f1172c14d439" >
+		<logger level="ERROR" doc:name="Logger" doc:id="9daf1c0d-0e05-404d-ba8e-d7ac182afaa5" message='#[output application/json&#10;---&#10;{&#10;	"errMesg": "TRY-BLOCK ERRORS IN SCATTER-GATHER: Processed by Processor-level Error Handler -&gt; On Error Continue",&#10;	"errDesc": error.description,&#10;	"errorAt": error.failingComponent,&#10;	"errorType": {&#10;		"moduleName": error.errorType.namespace,&#10;		"errorID": error.errorType.identifier&#10;	}&#10;}]'/>
+		<set-payload value="#[[]]" doc:name="Suppress Errors" doc:id="c1552452-39d5-4eda-b28f-539f2085fe1d" />
+	</sub-flow>
 	<flow name="getDeltaFlights" doc:id="7526c19f-d8f0-4340-84d0-2a6fb3a63626" >
 		<choice doc:name="Route based on destination city code" doc:id="b3c775ae-d84b-4370-bd6f-9af281e1f173" >
 			<when expression='#[vars.cityCode != "ALL"]'>

@@ -16,7 +16,7 @@ http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/
 		<http:request-connection protocol="${united.rest.protocol}" host="${united.rest.hostName}" port="${united.rest.portNumber}" />
 	</http:request-config>
 	<wsc:config name="Delta_SOAP_Connector" doc:name="Web Service Consumer Config" doc:id="9fe27cf6-e9fe-4b24-ba3e-aeb0cbcfe6ad" >
-		<wsc:connection wsdlLocation="http://mu.mule-training.com/delta?wsdl" service="TicketServiceService" port="DeltaFlightsServiceImplPort-XXX" address="http://mu.mule-training.com/delta" >
+		<wsc:connection wsdlLocation="${delta.soap.wsdlLocation}" service="${delta.soap.serviceName}" port="${delta.soap.portType}" address="${delta.soap.address}" >
 			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
 		</wsc:connection>
 	</wsc:config>

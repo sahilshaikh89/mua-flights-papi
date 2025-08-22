@@ -29,3 +29,10 @@ united:
     protocol:                         "HTTP"
     path:                             "/flights"
     filterBy:                         "{destinationCity}"
+    
+delta:
+  soap:
+    wsdlLocation:                     "http://ilt.mule-training.com/delta?wsdl"
+    serviceName:                      "TicketServiceService"
+    portType:                         "DeltaFlightsServiceImplPort"
+    address:                          "http://ilt.mule-training.com/delta" 

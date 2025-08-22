@@ -31,7 +31,12 @@ united:
     filterBy:                         "{destinationCity}"
     
 
-        
+delta:
+  soap:
+    wsdlLocation:                     "http://mu.mule-training.com/delta?wsdl"
+    serviceName:                      "TicketServiceService"
+    portType:                         "DeltaFlightsServiceImplPort"
+    address:                          "http://mu.mule-training.com/delta"   
 
 # American REST service properties
 #american:

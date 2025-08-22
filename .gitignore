@@ -95,6 +95,7 @@ Thumbs.db
 *.war
 *.ear
 *.rar
+*.wev
 
 # OS specific
 .idea/
